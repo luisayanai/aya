@@ -6,6 +6,8 @@ function startQuiz() {
     document.getElementById('intro-page').classList.add('hidden');
     document.getElementById('quiz-page').classList.remove('hidden');
     loadQuestion(0);
+
+    document.getElementById('next-btn').innerText = 'Próxima';
 }
 
 // Example questions data (you can add more questions here)
@@ -97,6 +99,12 @@ function loadQuestion(index) {
     correctAnswerSelected = false;
     nextButton.disabled = true;
     nextButton.classList.add('disabled');
+    // Check if this is the last question and change button text
+    if (index === questions.length - 1) {
+        nextButton.innerText = 'Terminar Quiz';
+    } else {
+        nextButton.innerText = 'Próxima';
+    }
 }
 
 // Function to check the selected answer
@@ -127,7 +135,7 @@ function checkAnswer(selected) {
 
 // Function to launch confetti
 function launchConfetti() {
-    const duration = 5 * 1000; // 5 seconds
+    const duration = 4 * 1000; // 5 seconds
     const end = Date.now() + duration;
 
     const frame = () => {
