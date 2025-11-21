@@ -10,27 +10,51 @@
     </head>
 
     <body id="default-body">
+        <!-- Header / Branding -->
+        <header style="position:absolute; top:18px; left:18px; right:18px; display:flex; justify-content:center; pointer-events:none;">
+            <div style="pointer-events:auto; max-width:920px; width:100%; display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <div style="width:42px; height:42px; border-radius:10px; background:linear-gradient(135deg,#60a5fa,#6ee7b7); display:flex; align-items:center; justify-content:center; font-weight:800; color:#042233;">Q</div>
+                    <div style="text-align:left;">
+                        <div style="font-weight:800; color:var(--text-color);">Ultimate Quiz</div>
+                        <div style="font-size:12px; color:var(--muted-text);">Playful knowledge — professionally crafted</div>
+                    </div>
+                </div>
+                <div style="font-size:12px; color:var(--muted-text);">10 perguntas • tempo livre</div>
+            </div>
+        </header>
+
         <!-- Introduction Page -->
         <div id="intro-page" class="container quiz-card">
             <div class="card-content">
+                <div class="brand-sub">Desafio rápido</div>
                 <h1 class="gradient-text">ULTIMATE SUPER DUPER QUIZ</h1>
-                <p class="lead">Hora da verdade! Veja se você consegue responder essas 10 perguntas sobre temas gerais!</p>
-                <p class="text-muted">ps: para a melhor experiência, faça o teste no notebook e coloque fones de ouvido!</p>
-                
-                <button id="start-quiz-btn" class="btn btn-primary mt-4" onclick="startQuiz()">Começar</button>
+                <p class="lead" style="color:var(--muted-text); max-width:640px;">Hora da verdade! Veja se você consegue responder essas 10 perguntas sobre temas gerais.</p>
+                <p class="footer-note">Para melhor experiência, use fones de ouvido e preferencialmente um notebook.</p>
+                <div style="width:100%; max-width:420px; margin-top:8px; display:flex; flex-direction:column; gap:8px; align-items:center;">
+                    <div style="font-size:0.95rem; color:var(--muted-text);">Clique em começar para iniciar o quiz.</div>
+                    <button id="start-quiz-btn" class="btn mt-2" onclick="startQuiz()">Começar</button>
+                </div>
             </div>
         </div>
 
         <div id="quiz-page" class="container quiz-card hidden">
             <div class="card-content">
-                <div id="question" class="question-text"></div>
-                <div class="answers-container">
+                <div class="question-meta" aria-hidden="false">
+                    <div class="badge-q" id="question-number">Pergunta 1/10</div>
+                    <div style="flex:1"></div>
+                    <div class="footer-note" id="score-display">Pontuação: 0</div>
+                </div>
+                <div id="question" class="question-text" aria-live="polite"></div>
+                <div class="answers-container" role="list">
                     <!-- Answer divs will be dynamically created here -->
                 </div>
-                <div class="progress-container">
-                    <div id="progress-bar" class="progress-bar"></div>
+                <div class="progress-container" aria-hidden="false">
+                    <div id="progress-bar" class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
-                <button id="next-btn" class="btn btn-primary mt-3 disabled" onclick="nextQuestion()" disabled>Próxima</button>
+                <div style="width:100%; display:flex; justify-content:center; gap:12px;">
+                    <button id="next-btn" class="btn mt-3 disabled" onclick="nextQuestion()" disabled>Próxima</button>
+                </div>
             </div>
         </div>
 
@@ -46,6 +70,18 @@
             </div>
         </div>
         
+        <!-- Result Modal (hidden by default) -->
+        <div id="result-modal" class="quiz-modal hidden" role="dialog" aria-modal="true" aria-labelledby="result-title">
+            <div class="quiz-modal-content">
+                <h3 id="result-title">Resultado</h3>
+                <p id="result-summary">Você marcou <strong id="final-score">0</strong> de 10 pontos.</p>
+                <div style="display:flex; gap:12px; justify-content:center; margin-top:12px;">
+                    <button class="btn" onclick="retryQuiz()">Tentar novamente</button>
+                    <button class="btn secondary" onclick="shareResult()">Compartilhar</button>
+                </div>
+            </div>
+        </div>
+
         <script src="index.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 

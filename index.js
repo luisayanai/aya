@@ -1,13 +1,50 @@
 let currentQuestionIndex = 0;
-let correctAnswerSelected = false;
+let score = 0;
+let scoredQuestions = new Set();
+let playerName = 'Aya';
 
 // Function to start the quiz and hide the intro page
 function startQuiz() {
+    // Reset state
+    currentQuestionIndex = 0;
+    score = 0;
+    scoredQuestions.clear();
     document.getElementById('intro-page').classList.add('hidden');
     document.getElementById('quiz-page').classList.remove('hidden');
+    // Update score display if present
+    const scoreEl = document.getElementById('score-display');
+    if (scoreEl) scoreEl.textContent = `Pontuação: ${score}`;
     loadQuestion(0);
-
     document.getElementById('next-btn').innerText = 'Próxima';
+}
+
+// Small in-page toast for polished feedback (replaces alert())
+function showToast(message, type = 'info', duration = 6000) {
+    let root = document.getElementById('toast-root');
+    if (!root) {
+        root = document.createElement('div');
+        root.id = 'toast-root';
+        document.body.appendChild(root);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `quiz-toast quiz-toast-${type}`;
+    toast.textContent = message;
+    root.appendChild(toast);
+
+    // entrance
+    requestAnimationFrame(() => { toast.style.opacity = '1'; toast.style.transform = 'translateY(0)'; });
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(12px)';
+        setTimeout(() => root.removeChild(toast), 300);
+    }, duration);
+}
+
+function updateScoreDisplay() {
+    const scoreEl = document.getElementById('score-display');
+    if (scoreEl) scoreEl.textContent = `Pontuação: ${score}`;
 }
 
 // Example questions data (you can add more questions here)
@@ -67,7 +104,10 @@ const questions = [
 // Function to load a question
 function loadQuestion(index) {
     const questionData = questions[index];
-    document.getElementById('question').textContent = questionData.question;
+    // keep the global index in sync
+    currentQuestionIndex = index;
+    const qText = playerName ? `${questionData.question}` : questionData.question;
+    document.getElementById('question').textContent = qText;
     const answersContainer = document.querySelector('.answers-container');
     const nextButton = document.getElementById('next-btn');
     
@@ -78,6 +118,8 @@ function loadQuestion(index) {
     questionData.answers.forEach((answerText, i) => {
         const answerDiv = document.createElement('div');
         answerDiv.classList.add('answer');
+        // allow absolute positioning for evasive behaviour
+        answerDiv.style.position = 'relative';
         answerDiv.dataset.index = i;
         answerDiv.dataset.correct = i === questionData.correctAnswer ? 'true' : 'false';
         answerDiv.textContent = answerText;
@@ -94,16 +136,24 @@ function loadQuestion(index) {
     const progressBar = document.getElementById('progress-bar');
     const progressPercentage = ((index + 1) / questions.length) * 100;
     progressBar.style.width = `${progressPercentage}%`;
+    // ARIA and meta updates
+    progressBar.setAttribute('aria-valuenow', String(Math.round(progressPercentage)));
+    const qNumEl = document.getElementById('question-number');
+    if (qNumEl) qNumEl.textContent = `Pergunta ${index + 1}/${questions.length}`;
+    const scoreEl = document.getElementById('score-display');
+    if (scoreEl) scoreEl.textContent = `Pontuação: ${score}`;
 
     // Reset state variables
-    correctAnswerSelected = false;
     nextButton.disabled = true;
     nextButton.classList.add('disabled');
     // Check if this is the last question and change button text
     if (index === questions.length - 1) {
         nextButton.innerText = 'Terminar Quiz';
+    // enable evasive 'Não' behavior on the last question
+    enableEvasiveNo();
     } else {
         nextButton.innerText = 'Próxima';
+    disableEvasiveNo();
     }
 }
 
@@ -120,6 +170,8 @@ function checkAnswer(selected) {
         selected.classList.add('correct');
         nextButton.disabled = false;
         nextButton.classList.remove('disabled');
+
+    // mark as answered correctly visually; score will be applied when advancing
 
         // Trigger confetti if it's the last question and "Sim" was selected
         if (
@@ -170,17 +222,25 @@ function nextQuestion() {
     if (!correctAnswer) {
         // Check if any incorrect answers have been selected
         if (incorrectAnswers.length > 0) {
-            alert('Ops! Você só selecionou respostas incorretas. Tente novamente!');
+            showToast('Ops! Você só selecionou respostas incorretas. Tente novamente!', 'warn');
         } else {
-            alert('Por favor, selecione uma resposta antes de prosseguir.');
+            showToast('Por favor, selecione uma resposta antes de prosseguir.', 'warn');
         }
         return;
     }
     
+    // If the question has a correct answer and we haven't counted it yet, increment score now
+    if (correctAnswer && !scoredQuestions.has(currentQuestionIndex)) {
+        score += 1;
+        scoredQuestions.add(currentQuestionIndex);
+    updateScoreDisplay();
+    showToast('Resposta correta! +1 ponto', 'success', 2400);
+    }
+
     currentQuestionIndex++;
 
     if (currentQuestionIndex === 9) {
-        alert("Oh, oh...parece que a Luísa tem um recadinho para você, Aya.");
+        showToast("Oh, oh...parece que a Luísa tem um recadinho para você, Aya.", 'info', 6000);
         loadVideo();
     } else if (currentQuestionIndex < questions.length) {
         loadQuestion(currentQuestionIndex);
@@ -192,7 +252,8 @@ function nextQuestion() {
             nextButton.innerText = 'Próxima';
         }
     } else {
-        alert('Parabéns!! Você concluiu o quiz :))');
+        // Show final result modal instead of a toast
+        showResultModal();
     }
 }
 
@@ -208,3 +269,179 @@ function continueQuiz() {
     document.getElementById('quiz-page').classList.remove('hidden');
     loadQuestion(currentQuestionIndex);
 }
+
+function showResultModal() {
+    const modal = document.getElementById('result-modal');
+    const finalScoreEl = document.getElementById('final-score');
+    if (finalScoreEl) finalScoreEl.textContent = `${score}`;
+    if (modal) modal.classList.remove('hidden');
+}
+
+function retryQuiz() {
+    const modal = document.getElementById('result-modal');
+    if (modal) modal.classList.add('hidden');
+    // restart
+    startQuiz();
+}
+
+function shareResult() {
+    const text = `Eu marquei ${score}/${questions.length} no Ultimate Quiz!`; 
+    if (navigator.share) {
+        navigator.share({ title: 'Ultimate Quiz', text }).catch(() => showToast('Não foi possível compartilhar.', 'warn'));
+    } else {
+        // fallback: copy to clipboard
+        navigator.clipboard?.writeText(text).then(() => showToast('Resultado copiado para área de transferência!', 'info'), () => showToast('Não foi possível copiar.', 'warn'));
+    }
+}
+
+// --- Evasive 'Não' behaviour for final question ---
+let evasiveEnabled = false;
+let evasiveTarget = null; // DOM node for the 'Não' option
+let evasiveHandler = null;
+let evasiveIntervalId = null;
+let simOriginal = { position: '', left: '', top: '', zIndex: '' };
+let simTarget = null;
+
+function enableEvasiveNo() {
+    evasiveEnabled = true;
+    // find the answer that has text 'Não' (case-insensitive)
+    setTimeout(() => { // wait a tick because answers are created dynamically
+        const answers = Array.from(document.querySelectorAll('.answer'));
+        evasiveTarget = answers.find(a => a.textContent.trim().toLowerCase() === 'não' || a.textContent.trim().toLowerCase() === 'nao');
+        if (!evasiveTarget) return;
+    // make it fixed so it can roam the viewport
+    evasiveTarget.style.position = 'fixed';
+    evasiveTarget.style.transition = 'left 400ms ease, top 400ms ease, transform 200ms ease';
+
+    // find 'Sim' element to avoid overlapping and center it
+    const ansList = Array.from(document.querySelectorAll('.answer'));
+    const simEl = ansList.find(a => a.textContent.trim().toLowerCase() === 'sim');
+    simTarget = simEl || null;
+    if (simTarget) {
+        // store original inline styles to restore later
+        simOriginal.position = simTarget.style.position || '';
+        simOriginal.left = simTarget.style.left || '';
+        simOriginal.top = simTarget.style.top || '';
+        simOriginal.zIndex = simTarget.style.zIndex || '';
+        simTarget.style.position = 'fixed';
+        simTarget.style.left = '50%';
+        simTarget.style.top = '48%';
+        simTarget.style.transform = 'translate(-50%, -50%)';
+        simTarget.style.zIndex = '99998';
+    }
+
+    // start a periodic mover so it continuously roams the screen
+    if (evasiveIntervalId) clearInterval(evasiveIntervalId);
+    evasiveIntervalId = setInterval(() => moveNoToRandomPosition(evasiveTarget, simEl), 400);
+    // move once immediately
+    moveNoToRandomPosition(evasiveTarget, simEl);
+    }, 30);
+}
+
+function disableEvasiveNo() {
+    evasiveEnabled = false;
+    if (evasiveHandler) {
+        document.removeEventListener('mousemove', evasiveHandler);
+        evasiveHandler = null;
+    }
+    if (evasiveIntervalId) { clearInterval(evasiveIntervalId); evasiveIntervalId = null; }
+    if (evasiveTarget) {
+        evasiveTarget.style.position = 'relative';
+        evasiveTarget.style.left = '';
+        evasiveTarget.style.top = '';
+        evasiveTarget = null;
+    }
+    if (simTarget) {
+        simTarget.style.position = simOriginal.position;
+        simTarget.style.left = simOriginal.left;
+        simTarget.style.top = simOriginal.top;
+        simTarget.style.transform = '';
+        simTarget.style.zIndex = simOriginal.zIndex;
+        simTarget = null;
+    }
+    const parent = document.querySelector('.answers-container');
+    if (parent) parent.style.position = '';
+}
+
+function moveNoIfNearViewport(event, target, avoidEl) {
+    if (!target) return;
+    const rect = target.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = event.clientX - cx;
+    const dy = event.clientY - cy;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const threshold = 140; // pixels
+    if (dist < threshold) {
+        const vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+        const vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+        const tW = rect.width;
+        const tH = rect.height;
+
+        // Try to find a random spot in viewport that doesn't overlap avoidEl (Sim)
+        let attempts = 0;
+        while (attempts < 20) {
+            const left = Math.floor(Math.random() * Math.max(8, vw - tW - 16)) + 8;
+            const top = Math.floor(Math.random() * Math.max(8, vh - tH - 16)) + 8;
+            target.style.left = `${left}px`;
+            target.style.top = `${top}px`;
+            target.style.zIndex = '99999';
+
+            if (!avoidEl) break;
+            const a = target.getBoundingClientRect();
+            const b = avoidEl.getBoundingClientRect();
+            const overlap = !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+            if (!overlap) break;
+            attempts++;
+        }
+        // fallback: place in bottom-right corner if still overlapping
+        const aFinal = target.getBoundingClientRect();
+        const bFinal = avoidEl ? avoidEl.getBoundingClientRect() : null;
+        const overlapFinal = avoidEl ? !(aFinal.right < bFinal.left || aFinal.left > bFinal.right || aFinal.bottom < bFinal.top || aFinal.top > bFinal.bottom) : false;
+        if (overlapFinal) {
+            target.style.left = `${Math.max(12, vw - tW - 24)}px`;
+            target.style.top = `${Math.max(12, vh - tH - 24)}px`;
+        }
+    }
+}
+
+function moveNoToRandomPosition(target, avoidEl) {
+    if (!target) return;
+    const vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+    const vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+    const rect = target.getBoundingClientRect();
+    const tW = rect.width;
+    const tH = rect.height;
+
+    let attempts = 0;
+    while (attempts < 30) {
+        const left = Math.floor(Math.random() * Math.max(8, vw - tW - 16)) + 8;
+        const top = Math.floor(Math.random() * Math.max(8, vh - tH - 16)) + 8;
+        target.style.left = `${left}px`;
+        target.style.top = `${top}px`;
+        target.style.zIndex = '99999';
+
+        if (!avoidEl) break;
+        const a = target.getBoundingClientRect();
+        const b = avoidEl.getBoundingClientRect();
+        const overlap = !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+        if (!overlap) break;
+        attempts++;
+    }
+    // final fallback: place top-left if still overlapping
+    const aFinal = target.getBoundingClientRect();
+    const bFinal = avoidEl ? avoidEl.getBoundingClientRect() : null;
+    const overlapFinal = avoidEl ? !(aFinal.right < bFinal.left || aFinal.left > bFinal.right || aFinal.bottom < bFinal.top || aFinal.top > bFinal.bottom) : false;
+    if (overlapFinal) {
+        target.style.left = '12px';
+        target.style.top = '12px';
+    }
+}
+
+// When user selects the evasive 'Não' (if they manage), disable evasive behaviour
+document.addEventListener('click', (e) => {
+    if (!evasiveEnabled) return;
+    if (evasiveTarget && e.target === evasiveTarget) {
+        disableEvasiveNo();
+    }
+});
