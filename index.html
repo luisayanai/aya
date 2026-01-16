@@ -27,12 +27,10 @@
         <!-- Introduction Page -->
         <div id="intro-page" class="container quiz-card">
             <div class="card-content">
-                <div class="brand-sub">Desafio rápido</div>
                 <h1 class="gradient-text">ULTIMATE SUPER DUPER QUIZ</h1>
-                <p class="lead" style="color:var(--muted-text); max-width:640px;">Hora da verdade! Veja se você consegue responder essas 10 perguntas sobre temas gerais.</p>
-                <p class="footer-note">Para melhor experiência, use fones de ouvido e preferencialmente um notebook.</p>
+                <p class="lead" style="color:var(--muted-text); max-width:640px;">Hora da verdade! Veja se você consegue responder essas 10 perguntas.</p>
+                <p class="footer-note">Para melhor experiência, use fones de ouvido e um notebook.</p>
                 <div style="width:100%; max-width:420px; margin-top:8px; display:flex; flex-direction:column; gap:8px; align-items:center;">
-                    <div style="font-size:0.95rem; color:var(--muted-text);">Clique em começar para iniciar o quiz.</div>
                     <button id="start-quiz-btn" class="btn mt-2" onclick="startQuiz()">Começar</button>
                 </div>
             </div>
@@ -42,8 +40,7 @@
             <div class="card-content">
                 <div class="question-meta" aria-hidden="false">
                     <div class="badge-q" id="question-number">Pergunta 1/10</div>
-                    <div style="flex:1"></div>
-                    <div class="footer-note" id="score-display">Pontuação: 0</div>
+                        <div style="flex:1"></div>
                 </div>
                 <div id="question" class="question-text" aria-live="polite"></div>
                 <div class="answers-container" role="list">
@@ -59,14 +56,26 @@
         </div>
 
 
-        <div id="video-page" class="container quiz-card hidden">
-            <div class="card-content">
-                <h2>Opa! Antes de continuar, assista a este videozinho especial!</h2>
-                <video width="100%" controls>
-                    <source src="video.mp4" type="video/mp4">
+        <div id="video-page" class="container quiz-card hidden" style="position:relative;">
+            <div class="card-content" style="width:100%;">
+                <h2 id="video-heading">Opa! Antes de continuar, assista a este videozinho especial!</h2>
+                <video id="page-video" width="100%" controls>
+                    <source id="page-video-source" src="video.mp4" type="video/mp4">
                     Seu navegador não suporta a exibição de vídeos.
                 </video>
-                <button id="continue-quiz-btn" class="btn btn-primary mt-4" onclick="continueQuiz()">Continuar Quiz</button>
+                <div style="display:flex; gap:12px; justify-content:center; margin-top:12px;">
+                    <button id="continue-quiz-btn" class="btn btn-primary" onclick="continueQuiz()">Continuar Quiz</button>
+                </div>
+
+                <!-- Final overlay used for end-of-quiz video -->
+                <div id="final-overlay" class="final-overlay hidden">
+                    <div class="final-overlay-content">
+                        <h1 id="final-text">yipiiiiiiiiiiiiii</h1>
+                        <div style="margin-top:12px;">
+                            <button class="btn" onclick="retryQuiz()">Recomeçar</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -74,6 +83,11 @@
         <div id="result-modal" class="quiz-modal hidden" role="dialog" aria-modal="true" aria-labelledby="result-title">
             <div class="quiz-modal-content">
                 <h3 id="result-title">yipiiiiiiiiiiiiii</h3>
+                <!-- Final celebratory video shown under the title -->
+                <video id="final-modal-video" width="100%" controls style="margin-top:12px; border-radius:8px;">
+                    <source id="final-modal-video-source" src="final_clip.mp4" type="video/mp4">
+                    Seu navegador não suporta a exibição de vídeos.
+                </video>
                 <div style="display:flex; gap:12px; justify-content:center; margin-top:12px;">
                     <button class="btn" onclick="retryQuiz()">Recomeçar</button>
                 </div>

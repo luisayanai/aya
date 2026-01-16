@@ -3,6 +3,43 @@ let score = 0;
 let scoredQuestions = new Set();
 let playerName = 'Aya';
 
+// --- Simple synthesized sounds using WebAudio (no external files) ---
+let __audioCtx = null;
+function getAudioContext() {
+    if (!__audioCtx) {
+        __audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return __audioCtx;
+}
+
+function playTone(frequency, duration = 220, type = 'sine', gain = 0.12) {
+    const ctx = getAudioContext();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(frequency, now);
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(gain, now + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + duration / 1000);
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + duration / 1000 + 0.02);
+}
+
+function playSuccessSound() {
+    // two quick rising beeps
+    playTone(880, 140, 'sine', 0.12);
+    setTimeout(() => playTone(1320, 160, 'sine', 0.11), 120);
+}
+
+function playErrorSound() {
+    // short low buzz + decay
+    playTone(220, 280, 'sawtooth', 0.14);
+    setTimeout(() => playTone(160, 180, 'sine', 0.08), 140);
+}
+
 // Function to start the quiz and hide the intro page
 function startQuiz() {
     // Reset state
@@ -168,6 +205,8 @@ function checkAnswer(selected) {
 
     if (selected.dataset.correct === 'true') {
         selected.classList.add('correct');
+    // play success sound on correct selection
+    try { playSuccessSound(); } catch (e) { /* ignore audio errors */ }
         nextButton.disabled = false;
         nextButton.classList.remove('disabled');
 
@@ -181,7 +220,9 @@ function checkAnswer(selected) {
             launchConfetti();
         }
     } else {
-        selected.classList.add('incorrect');
+    selected.classList.add('incorrect');
+    // play error sound on incorrect selection
+    try { playErrorSound(); } catch (e) { /* ignore audio errors */ }
     }
 }
 
@@ -252,7 +293,7 @@ function nextQuestion() {
             nextButton.innerText = 'Próxima';
         }
     } else {
-        // Show final result modal instead of a toast
+        // Show final result modal with embedded celebratory video
         showResultModal();
     }
 }
@@ -280,8 +321,42 @@ function showResultModal() {
     if (quizPage) quizPage.classList.add('hidden');
     const videoPage = document.getElementById('video-page');
     if (videoPage) videoPage.classList.add('hidden');
+    // prepare and play the final modal video (if present)
+    const finalVideo = document.getElementById('final-modal-video');
+    const finalSource = document.getElementById('final-modal-video-source');
+    if (finalVideo && finalSource) {
+        // ensure the source is set (file should be present in project)
+        finalVideo.load();
+        finalVideo.play().catch(() => { /* autoplay may be blocked */ });
+    }
     // show modal
     if (modal) modal.classList.remove('hidden');
+}
+
+// Play a final video and then show overlay with celebratory text
+function playFinalVideo() {
+    // Hide quiz, show video page and load final clip
+    const quizPage = document.getElementById('quiz-page');
+    if (quizPage) quizPage.classList.add('hidden');
+    const videoPage = document.getElementById('video-page');
+    if (videoPage) videoPage.classList.remove('hidden');
+
+    const pageVideo = document.getElementById('page-video');
+    const pageVideoSource = document.getElementById('page-video-source');
+    const finalOverlay = document.getElementById('final-overlay');
+
+    // Use a special final video file if available, otherwise reuse the same
+    pageVideoSource.src = 'final.mp4';
+    pageVideo.load();
+    pageVideo.play().catch(() => { /* autoplay may be blocked, ignore */ });
+
+    // when the video ends, show the celebratory overlay above it
+    pageVideo.onended = function() {
+        if (finalOverlay) finalOverlay.classList.remove('hidden');
+    };
+
+    // Also allow overlay to be shown after a short delay in case onended isn't fired
+    setTimeout(() => { if (pageVideo.ended && finalOverlay) finalOverlay.classList.remove('hidden'); }, 1200);
 }
 
 function retryQuiz() {
@@ -301,9 +376,7 @@ let simOriginal = { position: '', left: '', top: '', zIndex: '' };
 let simTarget = null;
 
 function enableEvasiveNo() {
-    // Don't enable evasive behaviour on touch devices (bad UX) or when pointer is coarse
-    const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0 || window.matchMedia('(pointer:coarse)').matches;
-    if (isTouch) return;
+    // Enable evasive behaviour (always active on desktop as requested)
     evasiveEnabled = true;
     // find the answer that has text 'Não' (case-insensitive)
     setTimeout(() => { // wait a tick because answers are created dynamically
