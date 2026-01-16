@@ -136,6 +136,29 @@ body {
     .gradient-text { font-size: 1.8rem; }
 }
 
+/* Mobile-specific improvements */
+@media (max-width: 600px) {
+    body { padding: 16px; }
+    .quiz-card { padding: 18px; border-radius: 12px; max-width: 100%; }
+    .gradient-text { font-size: 1.4rem; }
+    .question-text { font-size: 1rem; padding: 0 6px; }
+    .answers-container { grid-template-columns: 1fr; gap: 12px; }
+    .answer { font-size: 1rem; padding: 16px 18px; border-radius: 12px; }
+    .answer:hover { transform: none; }
+    .btn { padding: 12px 18px; font-size: 1rem; }
+    .progress-container { height: 10px; }
+    /* modal full-width on small screens */
+    .quiz-modal-content { width: calc(100% - 32px); padding: 18px; border-radius: 10px; }
+    /* center toasts and make them slightly larger */
+    #toast-root { left: 12px; right: 12px; bottom: 14px; align-items: center; }
+    .quiz-toast { min-width: auto; width: 100%; max-width: 640px; }
+}
+
+/* Disable hover effects on devices without hover capability */
+@media (hover: none) {
+    .answer:hover { transform: none; }
+}
+
 .footer-note { font-size:0.85rem; color:var(--muted-text); margin-top:8px; }
 
 /* Toast styles for in-app notifications */
@@ -152,3 +175,15 @@ body {
 .quiz-modal p { color:var(--muted-text); font-size:1.05rem; }
 .quiz-modal .btn { padding:10px 16px; }
 .quiz-modal.hidden { display:none !important; }
+
+/* Modal entrance animation */
+@keyframes modal-pop {
+    0% { opacity: 0; transform: translateY(12px) scale(0.96); }
+    60% { opacity: 1; transform: translateY(-6px) scale(1.02); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.quiz-modal-content {
+    will-change: transform, opacity;
+    animation: modal-pop 380ms cubic-bezier(.2,.9,.24,1);
+}

@@ -301,6 +301,9 @@ let simOriginal = { position: '', left: '', top: '', zIndex: '' };
 let simTarget = null;
 
 function enableEvasiveNo() {
+    // Don't enable evasive behaviour on touch devices (bad UX) or when pointer is coarse
+    const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0 || window.matchMedia('(pointer:coarse)').matches;
+    if (isTouch) return;
     evasiveEnabled = true;
     // find the answer that has text 'Não' (case-insensitive)
     setTimeout(() => { // wait a tick because answers are created dynamically
