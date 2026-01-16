@@ -240,7 +240,7 @@ function nextQuestion() {
     currentQuestionIndex++;
 
     if (currentQuestionIndex === 9) {
-        showToast("Oh, oh...parece que a Luísa tem um recadinho para você, Aya.", 'info', 6000);
+        alert("Oh, oh...parece que a Luísa tem um recadinho para você, Aya.");
         loadVideo();
     } else if (currentQuestionIndex < questions.length) {
         loadQuestion(currentQuestionIndex);
@@ -270,10 +270,17 @@ function continueQuiz() {
     loadQuestion(currentQuestionIndex);
 }
 
+// Função chamada quando clica emm Terminar QUiz 
 function showResultModal() {
     const modal = document.getElementById('result-modal');
-    const finalScoreEl = document.getElementById('final-score');
-    if (finalScoreEl) finalScoreEl.textContent = `${score}`;
+    // ensure evasive behaviour is disabled so moving answers don't overlap the modal
+    try { disableEvasiveNo(); } catch (e) { /* ignore if not set */ }
+    // hide the quiz UI underneath so fixed-position answers won't be visible
+    const quizPage = document.getElementById('quiz-page');
+    if (quizPage) quizPage.classList.add('hidden');
+    const videoPage = document.getElementById('video-page');
+    if (videoPage) videoPage.classList.add('hidden');
+    // show modal
     if (modal) modal.classList.remove('hidden');
 }
 
@@ -284,15 +291,6 @@ function retryQuiz() {
     startQuiz();
 }
 
-function shareResult() {
-    const text = `Eu marquei ${score}/${questions.length} no Ultimate Quiz!`; 
-    if (navigator.share) {
-        navigator.share({ title: 'Ultimate Quiz', text }).catch(() => showToast('Não foi possível compartilhar.', 'warn'));
-    } else {
-        // fallback: copy to clipboard
-        navigator.clipboard?.writeText(text).then(() => showToast('Resultado copiado para área de transferência!', 'info'), () => showToast('Não foi possível copiar.', 'warn'));
-    }
-}
 
 // --- Evasive 'Não' behaviour for final question ---
 let evasiveEnabled = false;

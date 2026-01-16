@@ -146,8 +146,8 @@ body {
 .quiz-toast-info { background: linear-gradient(90deg,var(--accent-2),#9bd3ff); color:#042233; }
 
 /* Result modal */
-.quiz-modal { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(2,6,23,0.6); z-index:10000; }
-.quiz-modal-content { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:14px; padding:22px 26px; width: min(560px, 92%); text-align:center; box-shadow:var(--soft-shadow); border:1px solid rgba(255,255,255,0.04); color:var(--text-color); }
+.quiz-modal { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(2,6,23,0.9); z-index:200000; }
+.quiz-modal-content { background: #071025; border-radius:14px; padding:22px 26px; width: min(560px, 92%); text-align:center; box-shadow:var(--soft-shadow); border:1px solid rgba(255,255,255,0.06); color:var(--text-color); }
 .quiz-modal h3 { margin:0 0 8px 0; }
 .quiz-modal p { color:var(--muted-text); font-size:1.05rem; }
 .quiz-modal .btn { padding:10px 16px; }
