@@ -410,11 +410,13 @@ function enableEvasiveNo() {
     const simEl = ansList.find(a => a.textContent.trim().toLowerCase() === 'sim');
     simTarget = simEl || null;
     if (simTarget) {
-        // store original inline styles to restore later
+    // store original inline styles to restore later
     simOriginal.position = simTarget.style.position || '';
     simOriginal.left = simTarget.style.left || '';
     simOriginal.top = simTarget.style.top || '';
     simOriginal.bottom = simTarget.style.bottom || '';
+    simOriginal.transform = simTarget.style.transform || '';
+    simOriginal.padding = simTarget.style.padding || '';
     simOriginal.zIndex = simTarget.style.zIndex || '';
         simTarget.style.position = 'fixed';
         // On small screens or touch devices, avoid centering the 'Sim' button under the question text
@@ -430,7 +432,9 @@ function enableEvasiveNo() {
             let top = 18; // fallback
             if (questionEl) {
                 const qRect = questionEl.getBoundingClientRect();
-                top = Math.round(qRect.bottom + 8); // 8px gap under question
+                // add extra gap so the button doesn't visually touch/overlap the question
+                const extraGap = 20; // px
+                top = Math.round(qRect.bottom + extraGap); // place below question with padding
                 // ensure it doesn't go off-screen
                 top = Math.min(window.innerHeight - (simTarget.offsetHeight || 48) - 12, top);
                 top = Math.max(12, top);
@@ -441,6 +445,9 @@ function enableEvasiveNo() {
             simTarget.style.top = `${top}px`;
             simTarget.style.bottom = '';
             simTarget.style.transform = 'translateX(-50%)';
+            // increase padding so the button is larger and visually separated from the question
+            simTarget.style.padding = '12px 20px';
+            simTarget.style.borderRadius = '12px';
             simTarget.style.zIndex = '300000';
         }
     }
@@ -470,8 +477,9 @@ function disableEvasiveNo() {
         simTarget.style.position = simOriginal.position;
         simTarget.style.left = simOriginal.left;
         simTarget.style.top = simOriginal.top;
-        simTarget.style.transform = '';
+    simTarget.style.transform = simOriginal.transform;
     simTarget.style.bottom = simOriginal.bottom;
+    simTarget.style.padding = simOriginal.padding;
     simTarget.style.zIndex = simOriginal.zIndex;
         simTarget = null;
     }
