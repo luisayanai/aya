@@ -211,14 +211,12 @@ function loadQuestion(index) {
     disableEvasiveNo();
     }
 
-        // ensure holder spacing is correct even if enableEvasiveNo hasn't executed yet
-        if (index === questions.length - 1) {
-            const holder = document.getElementById('sim-holder');
-            if (holder) holder.style.display = 'flex';
-        } else {
-            const holder = document.getElementById('sim-holder');
-            if (holder) holder.style.display = '';
-        }
+    // ensure holder spacing is correct even if enableEvasiveNo hasn't executed yet
+    const holder = document.getElementById('sim-holder');
+    if (holder) {
+        if (index === questions.length - 1) holder.classList.add('active');
+        else holder.classList.remove('active');
+    }
 }
 
 // Function to check the selected answer
