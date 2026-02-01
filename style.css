@@ -208,3 +208,8 @@ body {
     will-change: transform, opacity;
     animation: modal-pop 380ms cubic-bezier(.2,.9,.24,1);
 }
+
+/* Place the holder visually between question and progress bar inside the card */
+.quiz-card .card-content > #sim-holder { margin-top: 12px; pointer-events: none; }
+#sim-holder { min-height: 56px; display:flex; justify-content:center; align-items:flex-start; }
+#sim-holder .answer { pointer-events: auto; margin-top: 8px; }

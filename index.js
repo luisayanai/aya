@@ -210,6 +210,15 @@ function loadQuestion(index) {
         nextButton.innerText = 'Próxima';
     disableEvasiveNo();
     }
+
+        // ensure holder spacing is correct even if enableEvasiveNo hasn't executed yet
+        if (index === questions.length - 1) {
+            const holder = document.getElementById('sim-holder');
+            if (holder) holder.style.display = 'flex';
+        } else {
+            const holder = document.getElementById('sim-holder');
+            if (holder) holder.style.display = '';
+        }
 }
 
 // Function to check the selected answer
@@ -394,70 +403,64 @@ let simOriginal = { position: '', left: '', top: '', zIndex: '' };
 let simTarget = null;
 
 function enableEvasiveNo() {
-    // Enable evasive behaviour (always active on desktop as requested)
     evasiveEnabled = true;
-    // find the answer that has text 'Não' (case-insensitive)
-    setTimeout(() => { // wait a tick because answers are created dynamically
+    setTimeout(() => {
         const answers = Array.from(document.querySelectorAll('.answer'));
-        evasiveTarget = answers.find(a => a.textContent.trim().toLowerCase() === 'não' || a.textContent.trim().toLowerCase() === 'nao');
+        evasiveTarget = answers.find(a => a.textContent && a.textContent.trim().toLowerCase() === 'não' || a.textContent && a.textContent.trim().toLowerCase() === 'nao');
         if (!evasiveTarget) return;
-    // make it fixed so it can roam the viewport
-    evasiveTarget.style.position = 'fixed';
-    evasiveTarget.style.transition = 'left 400ms ease, top 400ms ease, transform 200ms ease';
+        // make the 'Não' roam across the viewport
+        evasiveTarget.style.position = 'fixed';
+        evasiveTarget.style.transition = 'left 400ms ease, top 400ms ease, transform 200ms ease';
 
-    // find 'Sim' element to avoid overlapping and center it
-    const ansList = Array.from(document.querySelectorAll('.answer'));
-    const simEl = ansList.find(a => a.textContent.trim().toLowerCase() === 'sim');
-    simTarget = simEl || null;
-    if (simTarget) {
-    // store original inline styles to restore later
-    simOriginal.position = simTarget.style.position || '';
-    simOriginal.left = simTarget.style.left || '';
-    simOriginal.top = simTarget.style.top || '';
-    simOriginal.bottom = simTarget.style.bottom || '';
-    simOriginal.transform = simTarget.style.transform || '';
-    simOriginal.padding = simTarget.style.padding || '';
-    simOriginal.zIndex = simTarget.style.zIndex || '';
-        simTarget.style.position = 'fixed';
-        // On small screens or touch devices, avoid centering the 'Sim' button under the question text
+        // locate Sim
+        const simEl = answers.find(a => a.textContent && a.textContent.trim().toLowerCase() === 'sim');
+        simTarget = simEl || null;
+
         const isSmall = window.innerWidth < 700 || ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-        if (!isSmall) {
-            simTarget.style.left = '50%';
-            simTarget.style.top = '48%';
-            simTarget.style.transform = 'translate(-50%, -50%)';
-            simTarget.style.zIndex = '99999';
-        } else {
-            // place the 'Sim' button below the quiz card to avoid overlapping the centered question
-            const quizCard = document.querySelector('.quiz-card');
-            const simH = simTarget.offsetHeight || 48;
-            let top;
-            const extraGap = 36; // larger gap so the button is well below the question
-            if (quizCard) {
-                const r = quizCard.getBoundingClientRect();
-                top = Math.round(r.bottom + extraGap);
+        if (simTarget) {
+            // save original styles
+            simOriginal.position = simTarget.style.position || '';
+            simOriginal.left = simTarget.style.left || '';
+            simOriginal.top = simTarget.style.top || '';
+            simOriginal.bottom = simTarget.style.bottom || '';
+            simOriginal.transform = simTarget.style.transform || '';
+            simOriginal.padding = simTarget.style.padding || '';
+            simOriginal.zIndex = simTarget.style.zIndex || '';
+
+            if (isSmall) {
+                // deterministic: append Sim into the static holder inside the card so it sits below the question
+                const holder = document.getElementById('sim-holder');
+                if (holder && holder !== simTarget.parentNode) {
+                    try {
+                        if (!simOriginal.originalParent) {
+                            simOriginal.originalParent = simTarget.parentNode;
+                            simOriginal.originalNext = simTarget.nextSibling;
+                        }
+                    } catch (e) {}
+                    holder.appendChild(simTarget);
+                    simTarget.classList.add('in-sim-holder');
+                    // ensure visual style inside holder
+                    simTarget.style.position = 'relative';
+                    simTarget.style.left = '';
+                    simTarget.style.top = '';
+                    simTarget.style.transform = 'none';
+                    simTarget.style.padding = '12px 20px';
+                    simTarget.style.borderRadius = '12px';
+                    simTarget.style.zIndex = '1201';
+                }
             } else {
-                top = Math.round(window.innerHeight * 0.72);
+                // on larger screens, keep Sim centered fixed
+                simTarget.style.position = 'fixed';
+                simTarget.style.left = '50%';
+                simTarget.style.top = '48%';
+                simTarget.style.transform = 'translate(-50%, -50%)';
+                simTarget.style.zIndex = '99999';
             }
-            // clamp into viewport
-            top = Math.min(window.innerHeight - simH - 12, top);
-            top = Math.max(12, top);
-
-            simTarget.style.left = '50%';
-            simTarget.style.top = `${top}px`;
-            simTarget.style.bottom = '';
-            simTarget.style.transform = 'translateX(-50%)';
-            // increase padding so the button is larger and visually separated from the question
-            simTarget.style.padding = '12px 20px';
-            simTarget.style.borderRadius = '12px';
-            simTarget.style.zIndex = '300000';
         }
-    }
 
-    // start a periodic mover so it continuously roams the screen
-    if (evasiveIntervalId) clearInterval(evasiveIntervalId);
-    evasiveIntervalId = setInterval(() => moveNoToRandomPosition(evasiveTarget, simEl), 400);
-    // move once immediately
-    moveNoToRandomPosition(evasiveTarget, simEl);
+        if (evasiveIntervalId) clearInterval(evasiveIntervalId);
+        evasiveIntervalId = setInterval(() => moveNoToRandomPosition(evasiveTarget, simTarget), 400);
+        moveNoToRandomPosition(evasiveTarget, simTarget);
     }, 30);
 }
 
