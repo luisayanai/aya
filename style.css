@@ -169,6 +169,11 @@ body {
     .answer:hover { transform: none; }
 }
 
+/* Touch-friendly tweaks */
+.answer { touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0); }
+.btn { touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0); }
+.answers-container .answer { min-height: 52px; display:flex; align-items:center; }
+
 .footer-note { font-size:0.85rem; color:var(--muted-text); margin-top:8px; }
 
 /* Toast styles for in-app notifications */

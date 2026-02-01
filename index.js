@@ -53,6 +53,24 @@ function startQuiz() {
     if (scoreEl) scoreEl.textContent = `Pontuação: ${score}`;
     loadQuestion(0);
     document.getElementById('next-btn').innerText = 'Próxima';
+    // resume audio on first user interaction (required on some mobile browsers)
+    resumeAudioOnInteraction();
+}
+
+function resumeAudioOnInteraction() {
+    // some browsers block WebAudio until a user gesture; try to resume if suspended
+    try {
+        const ctx = getAudioContext();
+        if (ctx.state === 'suspended') {
+            const resume = () => {
+                ctx.resume().catch(() => {});
+                document.removeEventListener('click', resume);
+                document.removeEventListener('touchstart', resume);
+            };
+            document.addEventListener('click', resume, { once: true });
+            document.addEventListener('touchstart', resume, { once: true });
+        }
+    } catch (e) { /* ignore */ }
 }
 
 // Small in-page toast for polished feedback (replaces alert())
@@ -393,15 +411,27 @@ function enableEvasiveNo() {
     simTarget = simEl || null;
     if (simTarget) {
         // store original inline styles to restore later
-        simOriginal.position = simTarget.style.position || '';
-        simOriginal.left = simTarget.style.left || '';
-        simOriginal.top = simTarget.style.top || '';
-        simOriginal.zIndex = simTarget.style.zIndex || '';
+    simOriginal.position = simTarget.style.position || '';
+    simOriginal.left = simTarget.style.left || '';
+    simOriginal.top = simTarget.style.top || '';
+    simOriginal.bottom = simTarget.style.bottom || '';
+    simOriginal.zIndex = simTarget.style.zIndex || '';
         simTarget.style.position = 'fixed';
-        simTarget.style.left = '50%';
-        simTarget.style.top = '48%';
-        simTarget.style.transform = 'translate(-50%, -50%)';
-        simTarget.style.zIndex = '99998';
+        // On small screens or touch devices, avoid centering the 'Sim' button under the question text
+        const isSmall = window.innerWidth < 700 || ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+        if (!isSmall) {
+            simTarget.style.left = '50%';
+            simTarget.style.top = '48%';
+            simTarget.style.transform = 'translate(-50%, -50%)';
+            simTarget.style.zIndex = '99999';
+        } else {
+            // place the 'Sim' button centered near the bottom of the viewport to avoid overlap
+            simTarget.style.left = '50%';
+            simTarget.style.top = '';
+            simTarget.style.bottom = '18px';
+            simTarget.style.transform = 'translateX(-50%)';
+            simTarget.style.zIndex = '300000';
+        }
     }
 
     // start a periodic mover so it continuously roams the screen
@@ -430,7 +460,8 @@ function disableEvasiveNo() {
         simTarget.style.left = simOriginal.left;
         simTarget.style.top = simOriginal.top;
         simTarget.style.transform = '';
-        simTarget.style.zIndex = simOriginal.zIndex;
+    simTarget.style.bottom = simOriginal.bottom;
+    simTarget.style.zIndex = simOriginal.zIndex;
         simTarget = null;
     }
     const parent = document.querySelector('.answers-container');
