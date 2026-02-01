@@ -425,10 +425,21 @@ function enableEvasiveNo() {
             simTarget.style.transform = 'translate(-50%, -50%)';
             simTarget.style.zIndex = '99999';
         } else {
-            // place the 'Sim' button centered near the bottom of the viewport to avoid overlap
+            // place the 'Sim' button just below the question text to avoid overlap
+            const questionEl = document.getElementById('question');
+            let top = 18; // fallback
+            if (questionEl) {
+                const qRect = questionEl.getBoundingClientRect();
+                top = Math.round(qRect.bottom + 8); // 8px gap under question
+                // ensure it doesn't go off-screen
+                top = Math.min(window.innerHeight - (simTarget.offsetHeight || 48) - 12, top);
+                top = Math.max(12, top);
+            } else {
+                top = Math.min(window.innerHeight - (simTarget.offsetHeight || 48) - 12, window.innerHeight - 120);
+            }
             simTarget.style.left = '50%';
-            simTarget.style.top = '';
-            simTarget.style.bottom = '18px';
+            simTarget.style.top = `${top}px`;
+            simTarget.style.bottom = '';
             simTarget.style.transform = 'translateX(-50%)';
             simTarget.style.zIndex = '300000';
         }
