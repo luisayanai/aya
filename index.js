@@ -221,8 +221,10 @@ function loadQuestion(index) {
 
 // Function to check the selected answer
 function checkAnswer(selected) {
-    const answers = selected.closest('.answers-container').querySelectorAll('.answer');
-    const nextButton = selected.closest('.quiz-card').querySelector('#next-btn');
+    // support cases where the selected answer was moved out of the .answers-container (for the last question)
+    const containerEl = selected.closest('.answers-container') || document.querySelector('.answers-container');
+    const answers = containerEl ? containerEl.querySelectorAll('.answer') : document.querySelectorAll('.answer');
+    const nextButton = selected.closest('.quiz-card') ? selected.closest('.quiz-card').querySelector('#next-btn') : document.getElementById('next-btn');
 
     if (Array.from(answers).some(answer => answer.classList.contains('correct'))) {
         return;
@@ -436,6 +438,17 @@ function enableEvasiveNo() {
                         }
                     } catch (e) {}
                     holder.appendChild(simTarget);
+                    // ensure moved Sim still responds to clicks
+                    try {
+                        simTarget.removeEventListener('click', simTarget._quizClickHandler);
+                    } catch(e){}
+                    simTarget._quizClickHandler = function(e){
+                        // forward to existing checkAnswer handler
+                        checkAnswer(this);
+                        // if it's the last question and text is sim, launch confetti
+                        if (currentQuestionIndex === questions.length - 1 && this.textContent.trim().toLowerCase() === 'sim') launchConfetti();
+                    };
+                    simTarget.addEventListener('click', simTarget._quizClickHandler);
                     simTarget.classList.add('in-sim-holder');
                     // ensure visual style inside holder
                     simTarget.style.position = 'relative';
@@ -476,13 +489,39 @@ function disableEvasiveNo() {
         evasiveTarget = null;
     }
     if (simTarget) {
-        simTarget.style.position = simOriginal.position;
-        simTarget.style.left = simOriginal.left;
-        simTarget.style.top = simOriginal.top;
-    simTarget.style.transform = simOriginal.transform;
-    simTarget.style.bottom = simOriginal.bottom;
-    simTarget.style.padding = simOriginal.padding;
-    simTarget.style.zIndex = simOriginal.zIndex;
+        // remove any click handler we attached when moving it into the holder
+        try {
+            if (simTarget._quizClickHandler) {
+                simTarget.removeEventListener('click', simTarget._quizClickHandler);
+                delete simTarget._quizClickHandler;
+            }
+        } catch (e) { /* ignore */ }
+
+        // restore inline styles (use empty string as fallback)
+        simTarget.style.position = simOriginal.position || '';
+        simTarget.style.left = simOriginal.left || '';
+        simTarget.style.top = simOriginal.top || '';
+        simTarget.style.transform = simOriginal.transform || '';
+        simTarget.style.bottom = simOriginal.bottom || '';
+        simTarget.style.padding = simOriginal.padding || '';
+        simTarget.style.zIndex = simOriginal.zIndex || '';
+
+        // remove helper class we added while in the holder
+        try { simTarget.classList.remove('in-sim-holder'); } catch(e){}
+
+        // attempt to restore to original parent and position
+        try {
+            if (simOriginal.originalParent) {
+                if (simOriginal.originalNext && simOriginal.originalNext.parentNode === simOriginal.originalParent) {
+                    simOriginal.originalParent.insertBefore(simTarget, simOriginal.originalNext);
+                } else {
+                    simOriginal.originalParent.appendChild(simTarget);
+                }
+            }
+        } catch (e) { /* ignore DOM reinsert failures */ }
+
+        // clear saved original references
+        simOriginal = { position: '', left: '', top: '', zIndex: '' };
         simTarget = null;
     }
     const parent = document.querySelector('.answers-container');
