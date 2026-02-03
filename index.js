@@ -307,9 +307,10 @@ function nextQuestion() {
 
     currentQuestionIndex++;
 
+    // If we've advanced to the special pre-last-question slot, show the "antes" video first
     if (currentQuestionIndex === 9) {
-        alert("Oh, oh...parece que a Luísa tem um recadinho para você, Aya.");
-        loadVideo();
+        // play the 'antes' clip from Google Drive
+        loadVideo('https://drive.google.com/file/d/16KCn--JRqdgLribu6ZkuqG-BsFY014XN/view?usp=drive_link');
     } else if (currentQuestionIndex < questions.length) {
         loadQuestion(currentQuestionIndex);
         
@@ -327,12 +328,85 @@ function nextQuestion() {
 
 
 
-function loadVideo() {
-    document.getElementById('quiz-page').classList.add('hidden');
-    document.getElementById('video-page').classList.remove('hidden');
+function loadVideo(src) {
+    // show the dedicated video page and, if provided, set the source to the requested clip
+    const quizPage = document.getElementById('quiz-page');
+    if (quizPage) quizPage.classList.add('hidden');
+    const videoPage = document.getElementById('video-page');
+    if (videoPage) videoPage.classList.remove('hidden');
+
+    // Use helper to inject either a native <video> source or a Google Drive iframe preview
+    injectMediaForPlayer('page-video', src);
+}
+
+// --- Media helpers for Google Drive embed support ---
+function isDriveLink(src) {
+    return typeof src === 'string' && /drive\.google\.com\/(file\/d\/|open\?id=)/.test(src);
+}
+
+function drivePreviewUrl(src) {
+    if (!src) return '';
+    // try to extract file id from common Drive URL patterns
+    const idMatch = src.match(/\/d\/([^\/\?]+)|[?&]id=([^&]+)/);
+    const id = idMatch ? (idMatch[1] || idMatch[2]) : null;
+    return id ? `https://drive.google.com/file/d/${id}/preview` : src;
+}
+
+function injectMediaForPlayer(videoElId, src) {
+    const videoEl = document.getElementById(videoElId);
+    if (!videoEl) return;
+
+    // remove any previously injected iframe for this player
+    const existingIframe = document.getElementById(videoElId + '-iframe');
+    if (existingIframe) existingIframe.remove();
+
+    // helper to find the <source> element if present
+    const sourceId = (videoElId === 'page-video') ? 'page-video-source' : (videoElId === 'final-modal-video') ? 'final-modal-video-source' : videoElId + '-source';
+    const sourceEl = document.getElementById(sourceId) || videoEl.querySelector('source');
+
+    if (isDriveLink(src)) {
+        // hide native video element and inject Drive preview iframe
+        videoEl.style.display = 'none';
+        const iframe = document.createElement('iframe');
+        iframe.id = videoElId + '-iframe';
+        iframe.src = drivePreviewUrl(src);
+        iframe.setAttribute('allow', 'autoplay; encrypted-media; fullscreen');
+        iframe.setAttribute('allowfullscreen', '');
+        iframe.style.width = '100%';
+        iframe.style.height = videoEl.getAttribute('data-embed-height') || '360px';
+        iframe.style.border = '0';
+        iframe.style.borderRadius = videoEl.style.borderRadius || '8px';
+        // insert after the original video element to preserve layout
+        videoEl.parentNode.insertBefore(iframe, videoEl.nextSibling);
+    } else {
+        // use native <video> element: ensure it's visible and set source
+        if (sourceEl && src) {
+            sourceEl.src = src;
+            try { videoEl.load(); videoEl.play().catch(() => {}); } catch(e) { /* ignore */ }
+        }
+        videoEl.style.display = '';
+    }
+}
+
+function cleanupInjectedMedia(videoElId) {
+    const videoEl = document.getElementById(videoElId);
+    if (!videoEl) return;
+    const iframe = document.getElementById(videoElId + '-iframe');
+    if (iframe) iframe.remove();
+    // ensure native video element is visible again
+    videoEl.style.display = '';
+    // also clear any src on its source element to avoid accidental playback later
+    const sourceId = (videoElId === 'page-video') ? 'page-video-source' : (videoElId === 'final-modal-video') ? 'final-modal-video-source' : videoElId + '-source';
+    const sourceEl = document.getElementById(sourceId) || videoEl.querySelector('source');
+    if (sourceEl) {
+        try { sourceEl.removeAttribute('src'); } catch(e) {}
+        try { videoEl.load(); } catch(e) {}
+    }
 }
 
 function continueQuiz() {
+    // cleanup any injected drive iframe for the page player
+    cleanupInjectedMedia('page-video');
     document.getElementById('video-page').classList.add('hidden');
     document.getElementById('quiz-page').classList.remove('hidden');
     loadQuestion(currentQuestionIndex);
@@ -350,11 +424,9 @@ function showResultModal() {
     if (videoPage) videoPage.classList.add('hidden');
     // prepare and play the final modal video (if present)
     const finalVideo = document.getElementById('final-modal-video');
-    const finalSource = document.getElementById('final-modal-video-source');
-    if (finalVideo && finalSource) {
-        // ensure the source is set (file should be present in project)
-        finalVideo.load();
-        finalVideo.play().catch(() => { /* autoplay may be blocked */ });
+    if (finalVideo) {
+        // use Drive preview url (or fallback) via helper
+        injectMediaForPlayer('final-modal-video', 'https://drive.google.com/file/d/1iZbJwNLponAqzRGPJX0VwH-meBmC1oJA/view?usp=drive_link');
     }
     // show modal
     if (modal) modal.classList.remove('hidden');
@@ -390,6 +462,8 @@ function retryQuiz() {
     const modal = document.getElementById('result-modal');
     if (modal) modal.classList.add('hidden');
     // restart
+    // cleanup modal's injected media before restarting
+    cleanupInjectedMedia('final-modal-video');
     startQuiz();
 }
 
