@@ -309,6 +309,7 @@ function nextQuestion() {
 
     // If we've advanced to the special pre-last-question slot, show the "antes" video first
     if (currentQuestionIndex === 9) {
+        alert("Oh, oh...parece que a Luísa tem um recadinho para você, Aya.");
         // play the 'antes' clip from Google Drive
         loadVideo('https://drive.google.com/file/d/16KCn--JRqdgLribu6ZkuqG-BsFY014XN/view?usp=drive_link');
     } else if (currentQuestionIndex < questions.length) {
